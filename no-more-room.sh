@@ -1,13 +1,24 @@
 #!/bin/bash
 
-read -r -a chunks <<< $(df | awk '{print $4}')
-unset "chunks[0]" # drop "Available" column header
 
-size=0
-for chunk in "${chunks[@]}"; do
-    let size+=$chunk
-done
+available() {
+    local chunks
+    read -r -a chunks <<< $(df | awk '{print $4}')
+    unset "chunks[0]" # drop column header
+
+    local bytes=0
+    for chunk in "${chunks[@]}"; do
+        let bytes+=$chunk
+    done
+
+    echo "$bytes"
+}
+
 
 dest=/tmp/filler.lol
-echo "$(basename $0): writing $size random bytes to $dest"
-dd if=/dev/urandom iflag=fullblock | pv | dd of=$dest bs=1024 count=$size
+bytes=$(available)
+gigabytes=$(bc <<< "scale=2; $bytes / 1024^2")
+# truncated=${gigabytes%.*}
+
+echo "./$(basename $0): writing $gigabytes GB to $dest"
+dd if=/dev/urandom iflag=fullblock | pv | dd of=$dest bs=4096
