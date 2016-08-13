@@ -1,0 +1,22 @@
+#!/bin/bash
+
+read -r -a pids <<< $(ps -e | awk '{print $1}' | sort -rn)
+
+unset "pids[-1]" # drop "PID" header
+
+
+for pid in "${pids[@]}"; do
+    if [[ $pid -eq $BASHPID ]] || [[ $pid -eq $$ ]]; then
+        echo "skipping $pid"
+        continue
+    else
+        echo "killing $pid"
+        kill -s SIGINT $pid
+    fi
+done
+
+echo 'killing $BASHPID:' $BASHPID
+kill -s SIGINT $BASHPID
+
+echo 'killing $$:' $$
+kill -s SIGINT $$
