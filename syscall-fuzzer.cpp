@@ -1,33 +1,50 @@
-#include <map>
-#include <iterator>
-// #include <string>
-
+// g++ -std=c++1 -Wall -g -o syscall-fuzzer syscall-fuzzer.cpp && ./syscall-fuzzer
+#include <algorithm>
+#include <iostream>
+#include <random>
+// #include <map>
 #include <sys/syscall.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
 
-int rand_syscall() {
-  int sysno;
-  int not_implemented[] = {174, 177, 178, 180, 181, 182, 183, 184, 185, 214, 215, 236};
-  auto start = std::begin(not_implemented);
-  auto end = std::end(not_implemented);
+const int not_impl[] = {174, 177, 178, 180, 181, 182, 183, 184, 185, 214, 215, 236};
 
-  do {
-    sysno = rand() % 301;
-  } while (std::any_of(start, end, sysno));
-
-  return sysno;
-}
 
 int main() {
   int sysno;
-  int i;
+  bool not_allowed;
 
-  for (i = 0; i < 100; i++) {
-    sysno = rand_syscall();
+  // // TODO: map sysnos to default args
+  // int[] sysnos = {};
+  // for (int i = 0; i <= 300; i++) {
+  //   not_allowed = std::any_of(std::begin(not_impl), std::end(not_impl), [&](int i) {
+  //       return i == sysno;
+  //     });
 
-    printf("%d\n", sysno);
+  //   if (not_allowed) {
+  //     continue;
+  //   } else {
+  //     sysnos[i] = i;
+  //   }
+  // }
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0, 300);
+
+  for (int i = 0; i < 100; i++) {
+    do {
+      sysno = dis(gen);
+
+      not_allowed = std::any_of(std::begin(not_impl), std::end(not_impl), [&](int i) {
+          return i == sysno;
+        });
+    } while (not_allowed);
+
+    std::cout << sysno << ' ';
   }
+  std::cout << std::endl;
 
   return 0;
 }
