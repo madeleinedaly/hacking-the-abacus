@@ -89,5 +89,5 @@ int main() {
   // TODO: Catch SIGSEGV (which might get thrown when trying to write to read-
   //       only memory) as well as any other errors, and keep track of them.
 
-  return 0;
+  return EXIT_SUCCESS;
 }
