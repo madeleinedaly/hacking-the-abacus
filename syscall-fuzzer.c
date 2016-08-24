@@ -1,18 +1,17 @@
-#include <algorithm>
-#include <iostream>
-#include <random>
-#include <string>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <fcntl.h>
 
+// TOREF: pass more appropriate args to syscalls
 void invoke(int sysno, int fd) {
   const int size = 5;
   char buf[size];
   syscall(sysno, fd, buf, size);
 }
 
-const std::string syscalls[] = {
+const char* syscalls[] = {
   "read", "write", "open", "close", "stat", "fstat", "lstat", "poll", "lseek",
   "mmap", "mprotect", "munmap", "brk", "rt_sigaction", "rt_sigprocmask",
   "rt_sigreturn", "ioctl", "pread64", "pwrite64", "readv", "writev", "access",
@@ -69,29 +68,16 @@ const std::string syscalls[] = {
   "process_vm_writev", "kcmp", "finit_module"
 };
 
-const int skip[] = {174, 177, 178, 180, 181, 182, 183, 184, 185, 214, 215, 236};
-const auto start = std::begin(skip);
-const auto end = std::end(skip);
-
 int main() {
   const int fd = open("./file.txt", O_RDWR | O_APPEND);
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(0, 313);
-
   for (int i = 0; i < 100; i++) {
-    int sysno;
-
-    do {
-      sysno = dis(gen);
-    } while (std::any_of(start, end, [&](int j) { return j == sysno; }));
-
+    const int sysno = rand() % 313;
     const pid_t pid = fork();
     if (pid < 0) break;
 
-    const std::string name = syscalls[sysno];
-    std::cout << "[" << pid << "] " << name << std::endl;
+    const char* name = syscalls[sysno];
+    printf("[%d] %s\n", pid, name);
     invoke(sysno, fd);
   }
 
