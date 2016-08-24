@@ -4,13 +4,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-// TOREF: pass more appropriate args to syscalls
-void invoke(int sysno, int fd) {
-  const int size = 5;
-  char buf[size];
-  syscall(sysno, fd, buf, size);
-}
-
 const char* syscalls[] = {
   "read", "write", "open", "close", "stat", "fstat", "lstat", "poll", "lseek",
   "mmap", "mprotect", "munmap", "brk", "rt_sigaction", "rt_sigprocmask",
@@ -68,16 +61,28 @@ const char* syscalls[] = {
   "process_vm_writev", "kcmp", "finit_module"
 };
 
+// TOREF: craft more specifically suitable args depending on the syscall
+void invoke(int sysno, int fd) {
+  const int size = 5;
+  char buf[size];
+  syscall(sysno, fd, buf, size);
+}
+
+void log(sysno, pid) {
+  const char* name = syscalls[sysno];
+  printf("[%d] %s\n", pid, name);
+}
+
 int main() {
   const int fd = open("./file.txt", O_RDWR | O_APPEND);
+  const int mod = sizeof(syscalls) / sizeof(syscalls[0]);
 
   for (int i = 0; i < 100; i++) {
-    const int sysno = rand() % 313;
+    const int sysno = rand() % mod;
     const pid_t pid = fork();
     if (pid < 0) break;
 
-    const char* name = syscalls[sysno];
-    printf("[%d] %s\n", pid, name);
+    log(sysno, pid);
     invoke(sysno, fd);
   }
 
