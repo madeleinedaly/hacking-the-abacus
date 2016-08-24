@@ -7,87 +7,62 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
-#define MAX_BYTES 1024
 
-static void *safe_malloc(unsigned int size) {
+#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static void *smalloc(unsigned int size) {
   void *ptr;
   ptr = malloc(size);
   if (ptr == NULL) {
-    handle_error("in safe_malloc(): call to malloc() returned a null pointer");
+    handle_error("got null pointer");
   }
   return ptr;
 }
 
-/*
- * void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
- * int munmap(void *addr, size_t length);
- *
- * cf. http://linux.die.net/man/2/mmap
- */
+static char *getb(FILE *src, size_t len) {
+  char *buf;
+  buf = (char *)smalloc(2 * sizeof(char) * len + 1);
+  for (int i = 0; i < len; i++) {
+    sprintf(buf + i * 2, "%02x", fgetc(src));
+  }
+  return buf;
+}
+
 int main() {
-  // int fd_devmem;
-  int fd_logfile;
-  FILE *fd_devurandom;
-  char *buffer;
-  size_t num_bytes;
-  size_t i;
-  void *addr = NULL;
+  FILE           *urand;
+  FILE           *log;
+  size_t          bytes_len;
+  char           *bytes_buf;
+  size_t          addr_len;
+  char           *addr_buf;
+  unsigned long   addr;
 
-  // Open /dev/mem for synchronous read-only access
-  // if ((fd_devmem = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
-  //     close(fd_devmem);
-  //     handle_error("in main() while opening /dev/mem");
-  // }
-
-  // Open addr.log for write-/create-/append-only access, with read/write permissions
-  if ((fd_logfile = open("addr.log", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR)) < 0) {
-    close(fd_logfile);
-    handle_error("in main() while opening addr.log");
+  if ((urand = fopen("/dev/urandom", "r")) == NULL) {
+    handle_error("can't open /dev/urandom");
   }
 
-  // Open /dev/urandom for read-only access
-  if ((fd_devurandom = fopen("/dev/urandom", "r")) == NULL) {
-    handle_error("in main() while opening /dev/urandom");
+  if ((log = fopen("addr.log", "a")) == NULL) {
+    handle_error("can't open addr.log");
   }
 
-  // Get a random number of bytes from /dev/urandom
-  num_bytes = (size_t) fgetc(fd_devurandom);
-  buffer = (char *) safe_malloc(2 * sizeof(char) * num_bytes + 1);
-  for (i = 0; i < num_bytes; i++) {
-    sprintf(buffer + i * 2, "%02x", fgetc(fd_devurandom));
-  }
-  fclose(fd_devurandom);
-  printf("[debug] %zu bytes @ %p: %s\n", num_bytes, buffer, buffer);
 
-  // Log the buffer's address
-  addr = &buffer;
-  strncat(addr, "\n", 1);
-  // TODO: format into hexadecimal values
-  write(fd_logfile, addr, 4);
+  // get random number of random bytes
+  bytes_len = (size_t)fgetc(urand);
+  bytes_buf = getb(urand, bytes_len);
 
-  printf("[debug] addr: %lu\n", (unsigned long)addr);
+  printf("\ngot %zu random bytes:\n%s\n", bytes_len, bytes_buf);
 
-  // TODO: Get a random memory address by taking some bytes from /dev/urandom
 
-  // TODO: Write buffer to that address in /dev/mem
-  // addr = mmap(0, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd_devmem, __TODO_offset__);
+  // get random address
+  addr_len = (size_t)sizeof(unsigned long);
+  addr_buf = getb(urand, addr_len);
+  addr = strtoul(addr_buf, NULL, 16);
 
-  // if (addr == MAP_FAILED) {
-  //     handle_error("in main(): writing to /dev/mem failed");
-  // } else {
-  //     printf("[debug] wrote %d random bytes to %p", num_bytes, buffer);
-  //     write(fd_logfile, buffer, sizeof(buffer));
-  // }
+  printf("addr: 0x%lx\n", addr);
 
-  // if (munmap(addr, MAPPED_SIZE) == -1) {
-  //     handle_error("in main(): call to munmap() failed");
-  // }
 
-  // close(fd_devmem);
-
-  // TODO: Catch SIGSEGV (which might get thrown when trying to write to read-
-  //       only memory) as well as any other errors, and keep track of them.
+  fclose(urand);
+  fclose(log);
 
   return EXIT_SUCCESS;
 }
