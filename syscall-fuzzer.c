@@ -68,7 +68,7 @@ void invoke(int sysno, int fd) {
   syscall(sysno, fd, buf, size);
 }
 
-void log(sysno, pid) {
+void log(int sysno, int pid) {
   const char* name = syscalls[sysno];
   printf("[%d] %s\n", pid, name);
 }
