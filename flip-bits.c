@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
+#define err(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 static void *smalloc(unsigned int size) {
   void *ptr;
@@ -31,19 +31,18 @@ static char *getb(FILE *src, size_t len) {
 int main() {
   FILE           *urand;
   FILE           *log;
+
   size_t          bytes_len;
   char           *bytes_buf;
+
   size_t          addr_len;
   char           *addr_buf;
   unsigned long   addr;
 
-  if ((urand = fopen("/dev/urandom", "r")) == NULL) {
-    handle_error("can't open /dev/urandom");
-  }
 
-  if ((log = fopen("addr.log", "a")) == NULL) {
-    handle_error("can't open addr.log");
-  }
+  // get file pointers
+  if ((urand = fopen("/dev/urandom", "r")) == NULL) err("can't open /dev/urandom");
+  if ((log = fopen("addr.log", "a")) == NULL) err("can't open addr.log");
 
 
   // get random number of random bytes
