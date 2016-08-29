@@ -2,5 +2,5 @@
 
 int main(void) {
   printf("%s", "hello world\n");
-  return 0;
+  return __WORDSIZE;
 }

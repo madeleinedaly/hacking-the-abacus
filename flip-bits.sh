@@ -1,7 +1,6 @@
 #!/bin/bash
 
-gcc -std=gnu11 -g -Wall -o flip-bits flip-bits.c
-
+# gcc -std=gnu11 -g -Wall -o flip-bits flip-bits.c
 # touch flip-bits.log
 # > flip-bits.log
 
