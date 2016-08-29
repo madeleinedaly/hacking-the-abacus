@@ -1,7 +1,7 @@
 ; http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
 BITS 64
-GLOBAL main
+GLOBAL _start
 SECTION .text
-main:
+_start:
 	mov	eax, 666
 	ret
